@@ -125,7 +125,7 @@ int main()
 	memcpy(sendbuf + sizeof(eh), &ah, sizeof(ah));
 	//如果发送成功
 	if (pcap_sendpacket(adhandle, sendbuf, 42) == 0) {
-		printf("\nPacketSend succeed\n");
+		printf("\nPacketSend succeed happy\n");
 	}
 	else {
 		printf("PacketSendPacket in getmine Error: %d\n", GetLastError());
