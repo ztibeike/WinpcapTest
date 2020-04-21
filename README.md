@@ -1,5 +1,5 @@
 # WinpcapTest
-A C program based on WinpCap to encapsulate and send ARP packets
+A C program based on WinpCap to send and catch ARP packets
 
 TODO LIST:
 
