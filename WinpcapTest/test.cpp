@@ -97,9 +97,6 @@ int main()
 		return -1;
 	}
 
-	/*以上代码在WinPcap开发文档中都可以找到，填充ARP包的代码则要自己编写*/
-
-	//开始填充ARP包，填充数据写死在代码中，测试用时数据可随意填写
 	unsigned char sendbuf[42]; //arp包结构大小，42个字节
 	unsigned char mac[6] = { 0x00,0x11,0x22,0x33,0x44,0x55 };
 	unsigned char ip[4] = { 0x01,0x02,0x03,0x04 };
