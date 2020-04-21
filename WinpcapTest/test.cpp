@@ -176,8 +176,8 @@ int main()
 				ok = true;
 			}
 		}
-		printf("ARP header length: %d\n", header->len);
-		fprintf(fp, "ARP header length: %d\n", header->len);
+		printf("ARP packet length: %d\n", header->len);
+		fprintf(fp, "ARP packet length: %d\n", header->len);
 		local_tv_sec = header->ts.tv_sec;
 		ltime = localtime(&local_tv_sec);
 		strftime(timestr, sizeof(timestr), "%H:%M:%S", ltime);
@@ -205,17 +205,17 @@ int main()
 		printf("source mac: ");
 		fprintf(fp, "source mac: ");
 		for (int j = 0; j < 5; j++) {
-			printf("%x.", arpheader->smac[j]);
-			fprintf(fp, "%x.", arpheader->smac[j]);
+			printf("%02x-", arpheader->smac[j]);
+			fprintf(fp, "%02x-", arpheader->smac[j]);
 		}
 		printf("%x\n", arpheader->smac[5]);
-		fprintf(fp, "%x\n", arpheader->smac[5]);
+		fprintf(fp, "%02x\n", arpheader->smac[5]);
 		//´òÓ¡Ä¿µÄmac
 		printf("destination mac: ");
 		fprintf(fp, "destination mac: ");
 		for (int j = 0; j < 5; j++) {
-			printf("%x.", arpheader->dmac[j]);
-			fprintf(fp, "%x.", arpheader->dmac[j]);
+			printf("%02x-", arpheader->dmac[j]);
+			fprintf(fp, "%02x-", arpheader->dmac[j]);
 		}
 		printf("%x\n\n\n", arpheader->dmac[5]);
 		fprintf(fp, "%x\n\n\n", arpheader->dmac[5]);
