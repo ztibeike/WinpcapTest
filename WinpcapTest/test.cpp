@@ -224,5 +224,6 @@ int main()
 			break;
 		}
 	}
+	fclose(fp);
 	return 0;
 }
