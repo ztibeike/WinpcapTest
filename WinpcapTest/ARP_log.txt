@@ -1,0 +1,120 @@
+message 1:
+request message.
+ARP packet length: 42
+current time: 15:49:35
+source ip: 192.168.0.105
+destination ip: 192.168.0.100
+source mac: f8-28-19-ca-28-4f
+destination mac: ff-ff-ff-ff-ff-ff
+
+
+message 2:
+reply message.
+ARP packet length: 90
+current time: 15:49:35
+source ip: 235.0.21.194
+destination ip: 36.14.0.80
+source mac: 24-0e-03-82-11-0c
+destination mac: 85-c3-89-55-d1-4e
+
+
+message 3:
+reply message.
+ARP packet length: 90
+current time: 15:49:35
+source ip: 235.0.21.194
+destination ip: 36.14.0.80
+source mac: 24-0e-03-82-11-0c
+destination mac: 85-c3-89-55-d1-4e
+
+
+message 4:
+reply message.
+ARP packet length: 70
+current time: 15:49:35
+source ip: 0.105.222.246
+destination ip: 0.36.195.239
+source mac: 80-11-06-0c-c0-a8
+destination mac: 81-50-ce-e2-00-35
+
+
+message 5:
+reply message.
+ARP packet length: 70
+current time: 15:49:35
+source ip: 0.105.222.246
+destination ip: 0.36.126.249
+source mac: 80-11-06-0d-c0-a8
+destination mac: 81-50-f3-42-00-35
+
+
+message 6:
+reply message.
+ARP packet length: 70
+current time: 15:49:35
+source ip: 129.80.192.168
+destination ip: 0.36.254.118
+source mac: 3a-11-8b-d8-de-f6
+destination mac: 00-69-00-35-f3-42
+
+
+message 7:
+reply message.
+ARP packet length: 70
+current time: 15:49:35
+source ip: 0.105.59.51
+destination ip: 0.36.85.59
+source mac: 80-11-be-30-c0-a8
+destination mac: 4e-d2-f3-42-00-35
+
+
+message 8:
+reply message.
+ARP packet length: 130
+current time: 15:49:35
+source ip: 129.80.192.168
+destination ip: 0.96.106.70
+source mac: 74-11-11-d0-de-f6
+destination mac: 00-69-00-35-ce-e2
+
+
+message 9:
+reply message.
+ARP packet length: 70
+current time: 15:49:35
+source ip: 78.210.192.168
+destination ip: 0.36.212.184
+source mac: 3a-11-ce-af-3b-33
+destination mac: 00-69-00-35-f3-42
+
+
+message 10:
+reply message.
+ARP packet length: 90
+current time: 15:49:35
+source ip: 235.0.21.194
+destination ip: 36.14.0.80
+source mac: 24-0e-03-82-11-0c
+destination mac: 85-c3-89-55-d1-4e
+
+
+message 11:
+reply message.
+ARP packet length: 90
+current time: 15:49:35
+source ip: 235.0.21.194
+destination ip: 36.14.0.80
+source mac: 24-0e-03-82-11-0c
+destination mac: 85-c3-89-55-d1-4e
+
+
+message 12:
+reply message.
+ARP packet length: 42
+current time: 15:49:35
+source ip: 192.168.0.100
+destination ip: 192.168.0.105
+source mac: 48-fd-a3-02-da-c0
+destination mac: f8-28-19-ca-28-4f
+
+
