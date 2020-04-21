@@ -6,6 +6,7 @@
 #define ETH_IP          0x0800  //协议类型字段表示要映射的协议地址类型值为x0800表示IP地址
 #define ARP_REQUEST     1   //ARP请求
 #define ARP_RESPONSE       2      //ARP应答
+#pragma warning( disable : 4996 )
 
 //14字节以太网首部
 struct EthernetHeader
@@ -44,6 +45,17 @@ int main()
 	int i = 0;   //for循环变量
 	pcap_t* adhandle;   //打开网络适配器，捕捉实例,是pcap_open返回的对象
 	char errbuf[PCAP_ERRBUF_SIZE];   //错误缓冲区,大小为256
+	int res;
+	u_int netmask;	//子网掩码
+	char filter[] = "ethor proto \\arp"; //第一个'\'为转义,设置arp过滤规则
+	bpf_program fcode;
+	tm* ltime;
+	char timestr[16];
+	time_t local_tv_sec;
+	pcap_pkthdr* header;
+	const u_char* pkt_data;
+	FILE* fp = fopen("ARP_log.txt", "w"); //日志流
+
 
 	/* 获取本机设备列表 */
 	if (pcap_findalldevs_ex(PCAP_SRC_IF_STRING, NULL, &alldevs, errbuf) == -1)
@@ -97,18 +109,22 @@ int main()
 		return -1;
 	}
 
+	/*封装ARP数据包并广播发送*/
 	unsigned char sendbuf[42]; //arp包结构大小，42个字节
-	unsigned char mac[6] = { 0x00,0x11,0x22,0x33,0x44,0x55 };
-	unsigned char ip[4] = { 0x01,0x02,0x03,0x04 };
+	unsigned char src_mac[6] = { 0xf8,0x28,0x19,0xca,0x28,0x4f };
+	unsigned char src_ip[4] = { 0xc0,0xa8,0x00,0x69 };
+	unsigned char dest_mac[6] = { 0xff,0xff,0xff,0xff,0xff,0xff }; //MAC地址0xffffff表示广播帧
+	unsigned char dest_ip[4] = { 0xc0,0xa8,0x00,0x64 };
 	EthernetHeader eh;
 	ArpHeader ah;
 	//赋值MAC地址
-	memset(eh.DestMAC, 0xff, 6);   //以太网首部目的MAC地址，全为广播地址
-	memcpy(eh.SourMAC, mac, 6);   //以太网首部源MAC地址
-	memcpy(ah.smac, mac, 6);   //ARP字段源MAC地址
-	memset(ah.dmac, 0xff, 6);   //ARP字段目的MAC地址
-	memcpy(ah.sip, ip, 4);   //ARP字段源IP地址
-	memset(ah.dip, 0x05, 4);   //ARP字段目的IP地址
+	memcpy(eh.DestMAC, dest_mac, 6);   //以太网首部目的MAC地址，全为广播地址
+	memcpy(eh.SourMAC, src_mac, 6);   //以太网首部源MAC地址
+	memcpy(ah.smac, src_mac, 6);   //ARP字段源MAC地址
+	memcpy(ah.dmac, dest_mac, 6);   //ARP字段目的MAC地址
+	memcpy(ah.sip, src_ip, 4);   //ARP字段源IP地址
+	//memset(ah.dip, 0x05, 4);   //ARP字段目的IP地址
+	memcpy(ah.dip, dest_ip, 4);
 	eh.EthType = htons(ETH_ARP);   //htons：将主机的无符号短整形数转换成网络字节顺序
 	ah.hdType = htons(ARP_HARDWARE);
 	ah.proType = htons(ETH_IP);
@@ -128,8 +144,85 @@ int main()
 		printf("PacketSendPacket in getmine Error: %d\n", GetLastError());
 	}
 
+	/*捕获ARP数据包解析并记录日志*/
+	netmask = ((sockaddr_in*)(d->addresses->netmask))->sin_addr.S_un.S_addr;
+	pcap_compile(adhandle, &fcode, filter, 1, netmask);	//编译过滤器
+	pcap_setfilter(adhandle, &fcode);	//设置过滤器
+
 	/* 释放设备列表 */
 	pcap_freealldevs(alldevs);
+	i = 0;
 
+	//获取数据包并解析
+	while (res = pcap_next_ex(adhandle, &header, &pkt_data) >= 0) {
+		//超时
+		if (res == 0) {
+			continue;
+		}
+		printf("message %d:\n", ++i);
+		fprintf(fp, "message %d:\n", i);
+		//设置标志，当收到之前发送的request的reply时结束捕获
+		bool ok = false;
+		//解析ARP包，ARP包封装在MAC帧，MAC帧首部占14字节
+		ArpHeader* arpheader = (ArpHeader*)(pkt_data + 14);
+		if (arpheader->op == 256) {
+			printf("request message.\n");
+			fprintf(fp, "request message.\n");
+		} else {
+			printf("reply message.\n");
+			fprintf(fp, "reply message.\n");
+			//如果当前报文时reply报文，则通过比较ip来判断是否时之前发送的request对应的reply
+			if (memcmp(arpheader->dip, src_ip, sizeof(arpheader->dip)) == 0) {
+				ok = true;
+			}
+		}
+		printf("ARP header length: %d\n", header->len);
+		fprintf(fp, "ARP header length: %d\n", header->len);
+		local_tv_sec = header->ts.tv_sec;
+		ltime = localtime(&local_tv_sec);
+		strftime(timestr, sizeof(timestr), "%H:%M:%S", ltime);
+		printf("current time: %s\n", timestr);
+		fprintf(fp, "current time: %s\n", timestr);
+		//打印源ip
+		printf("source ip: ");
+		fprintf(fp, "source ip: ");
+		for (int j = 0; j < 3; j++) {
+			printf("%d.", arpheader->sip[j]);
+			fprintf(fp, "%d.", arpheader->sip[j]);
+		}
+		printf("%d\n", arpheader->sip[3]);
+		fprintf(fp, "%d\n", arpheader->sip[3]);
+		//打印目的ip
+		printf("destination ip: ");
+		fprintf(fp, "destination ip: ");
+		for (int j = 0; j < 3; j++) {
+			printf("%d.", arpheader->dip[j]);
+			fprintf(fp, "%d.", arpheader->dip[j]);
+		}
+		printf("%d\n", arpheader->dip[3]);
+		fprintf(fp, "%d\n", arpheader->dip[3]);
+		//打印源mac
+		printf("source mac: ");
+		fprintf(fp, "source mac: ");
+		for (int j = 0; j < 5; j++) {
+			printf("%x.", arpheader->smac[j]);
+			fprintf(fp, "%x.", arpheader->smac[j]);
+		}
+		printf("%x\n", arpheader->smac[5]);
+		fprintf(fp, "%x\n", arpheader->smac[5]);
+		//打印目的mac
+		printf("destination mac: ");
+		fprintf(fp, "destination mac: ");
+		for (int j = 0; j < 5; j++) {
+			printf("%x.", arpheader->dmac[j]);
+			fprintf(fp, "%x.", arpheader->dmac[j]);
+		}
+		printf("%x\n\n\n", arpheader->dmac[5]);
+		fprintf(fp, "%x\n\n\n", arpheader->dmac[5]);
+		fflush(fp);
+		if (ok) {
+			break;
+		}
+	}
 	return 0;
 }
