@@ -111,6 +111,8 @@ int main()
 
 	/*封装ARP数据包并广播发送*/
 	unsigned char sendbuf[42]; //arp包结构大小，42个字节
+	//设置本机网卡mac地址和ip地址，需要正确设置，且与选择的网卡所匹配
+	//TODO 自动获得选择的网卡的MAC和IP地址
 	unsigned char src_mac[6] = { 0xf8,0x28,0x19,0xca,0x28,0x4f };
 	unsigned char src_ip[4] = { 0xc0,0xa8,0x00,0x69 };
 	unsigned char dest_mac[6] = { 0xff,0xff,0xff,0xff,0xff,0xff }; //MAC地址0xffffff表示广播帧
