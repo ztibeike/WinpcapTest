@@ -8,4 +8,4 @@ TODO LIST:
 3. - [ ] handle exception
 4. - [ ] get adapter ip and mac automatically
 
-Note: Run you Visual Studio with administrator authority
+Note: Run your Visual Studio with administrator authority
