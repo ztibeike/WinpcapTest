@@ -9,7 +9,6 @@
 *.user
 *.userosscache
 *.sln.docstates
-*.txt
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
@@ -341,3 +340,4 @@ ASALocalRun/
 healthchecksdb
 
 # individual
+WinpcapTest/ARP_log.txt

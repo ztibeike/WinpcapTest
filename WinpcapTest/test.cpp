@@ -116,7 +116,7 @@ int main()
 	unsigned char src_mac[6] = { 0xf8,0x28,0x19,0xca,0x28,0x4f };
 	unsigned char src_ip[4] = { 0xc0,0xa8,0x00,0x69 };
 	unsigned char dest_mac[6] = { 0xff,0xff,0xff,0xff,0xff,0xff }; //MAC地址0xffffff表示广播帧
-	unsigned char dest_ip[4] = { 0xc0,0xa8,0x00,0x64 };
+	unsigned char dest_ip[4] = { 0xc0,0xa8,0x00,0x65 };
 	EthernetHeader eh;
 	ArpHeader ah;
 	//赋值MAC地址
@@ -147,6 +147,7 @@ int main()
 	}
 
 	/*捕获ARP数据包解析并记录日志*/
+	// TODO 处理异常
 	netmask = ((sockaddr_in*)(d->addresses->netmask))->sin_addr.S_un.S_addr;
 	pcap_compile(adhandle, &fcode, filter, 1, netmask);	//编译过滤器
 	pcap_setfilter(adhandle, &fcode);	//设置过滤器
