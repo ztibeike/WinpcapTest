@@ -2,14 +2,14 @@
 #include <winsock.h>
 
 #define ETH_ARP         0x0806  //以太网帧类型表示后面数据的类型，对于ARP请求或应答来说，该字段的值为x0806
-#define ARP_HARDWARE    1  //硬件类型字段值为表示以太网地址
+#define HARDWARE    1  //硬件类型字段值为表示以太网地址
 #define ETH_IP          0x0800  //协议类型字段表示要映射的协议地址类型值为x0800表示IP地址
-#define ARP_REQUEST     1   //ARP请求
-#define ARP_RESPONSE       2      //ARP应答
+#define REQUEST     1   //ARP请求
+#define RESPONSE       2      //ARP应答
 #pragma warning( disable : 4996 )
 
 //14字节以太网首部
-struct EthernetHeader
+struct EthHeader
 {
 	u_char DestMAC[6];    //目的MAC地址 6字节
 	u_char SourMAC[6];   //源MAC地址 6字节
@@ -32,7 +32,7 @@ struct ArpHeader
 
 //定义整个arp报文包，总长度42字节
 struct ArpPacket {
-	EthernetHeader ed;
+	EthHeader ed;
 	ArpHeader ah;
 };
 
@@ -117,7 +117,7 @@ int main()
 	unsigned char src_ip[4] = { 0xc0,0xa8,0x00,0x69 };
 	unsigned char dest_mac[6] = { 0xff,0xff,0xff,0xff,0xff,0xff }; //MAC地址0xffffff表示广播帧
 	unsigned char dest_ip[4] = { 0xc0,0xa8,0x00,0x65 };
-	EthernetHeader eh;
+	EthHeader eh;
 	ArpHeader ah;
 	//赋值MAC地址
 	memcpy(eh.DestMAC, dest_mac, 6);   //以太网首部目的MAC地址，全为广播地址
@@ -128,11 +128,11 @@ int main()
 	//memset(ah.dip, 0x05, 4);   //ARP字段目的IP地址
 	memcpy(ah.dip, dest_ip, 4);
 	eh.EthType = htons(ETH_ARP);   //htons：将主机的无符号短整形数转换成网络字节顺序
-	ah.hdType = htons(ARP_HARDWARE);
+	ah.hdType = htons(HARDWARE);
 	ah.proType = htons(ETH_IP);
 	ah.hdSize = 6;
 	ah.proSize = 4;
-	ah.op = htons(ARP_REQUEST);
+	ah.op = htons(REQUEST);
 
 	//构造一个ARP请求
 	memset(sendbuf, 0, sizeof(sendbuf));   //ARP清零
@@ -140,10 +140,12 @@ int main()
 	memcpy(sendbuf + sizeof(eh), &ah, sizeof(ah));
 	//如果发送成功
 	if (pcap_sendpacket(adhandle, sendbuf, 42) == 0) {
-		printf("\nPacketSend succeed\n");
+		printf("\nSend packet successfully\n\n");
+		fprintf(fp, "\nSend packet successfully\n\n");
 	}
 	else {
-		printf("PacketSendPacket in getmine Error: %d\n", GetLastError());
+		printf("Failed to send packet due to: %d\n", GetLastError());
+		fprintf(fp, "Failed to send packet due to: %d\n", GetLastError());
 	}
 
 	/*捕获ARP数据包解析并记录日志*/
@@ -155,6 +157,9 @@ int main()
 	/* 释放设备列表 */
 	pcap_freealldevs(alldevs);
 	i = 0;
+
+	printf("Catching packets...\n\n");
+	fprintf(fp, "Catching packets...\n\n");
 
 	//获取数据包并解析
 	while (res = pcap_next_ex(adhandle, &header, &pkt_data) >= 0) {
