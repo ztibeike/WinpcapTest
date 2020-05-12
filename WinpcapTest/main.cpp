@@ -325,7 +325,7 @@ int sendARP(u_char * src_ip, u_char * dst_ip)
 	memset(sendbuf, 0, sizeof(sendbuf));   //ARP清零
 	memcpy(sendbuf, &eh, sizeof(eh));
 	memcpy(sendbuf + sizeof(eh), &ah, sizeof(ah));
-	return pcap_sendpacket(adhandle, sendbuf, 42);	//发送ARP数据包并返回发送状态
+	return pcap_sendpacket(adhandle, sendbuf, 42);	// 发送ARP数据包并返回发送状态
 }
 
 /*捕获ARP数据包*/
