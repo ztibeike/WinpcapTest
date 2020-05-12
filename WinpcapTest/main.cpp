@@ -58,11 +58,11 @@ pcap_pkthdr* header;
 const u_char* pkt_data;
 FILE* fp = fopen("ARP_log.txt", "w"); //日志流
 u_int netmask;
-u_char net_ip_addr[MAXNUM + 1][4];//网络设备的ip地址，假设网络设备最多10个
-u_char net_mac_addr[6];
-u_char dst_ip[4] = { 0xc0,0xa8,0x00,0x65 };
-u_char dst_mac[6] = { 0xff,0xff,0xff,0xff,0xff,0xff };
-u_char random_mac[6] = { 0x12, 0x24, 0x56, 0x78, 0x9a, 0xbc };//为获取本机mac设置的随机mac
+u_char net_ip_addr[MAXNUM + 1][4];//所有网络设备的ip地址，假设网络设备最多10个
+u_char net_mac_addr[6];//选择的设备的mac地址
+u_char dst_ip[4] = { 0xc0,0xa8,0x00,0x65 }; //默认目的ip地址
+u_char dst_mac[6] = { 0xff,0xff,0xff,0xff,0xff,0xff }; //目的MAC地址，初值为ff-ff-ff-ff-ff-ff代表广播
+u_char random_mac[6] = { 0x12, 0x24, 0x56, 0x78, 0x9a, 0xbc };//为获取本机mac而设置的随机mac
 
 /*获取适配器ip地址*/
 char* iptos(u_long in, int num);
@@ -153,6 +153,7 @@ int main()
 
 
 	int res = getMacAddr(inum);
+	//未能自动获取到本机mac地址，需要手动输入
 	if (res != 0) {
 		printf("Cannot get MAC address automatically, please input MAC address: ");
 		fprintf(fp, "Cannot get MAC address automatically, please input MAC address: ");
@@ -164,6 +165,8 @@ int main()
 		}
 		fprintf(fp, "\n");
 	}
+
+	//设置目的ip地址，默认或者自定义
 	char option;
 	printf("\nUse default destination IP(192.168.0.101)? Y(y)/N(n): ");
 	fprintf(fp, "\nUse default destination IP(192.168.0.101)? Y(y)/N(n): ");
@@ -287,13 +290,12 @@ int main()
 }
 
 
-/*获取适配器ip地址*/
+/*获取适配器ip地址, 代码来源于官方文档*/
 char* iptos(u_long in, int num)
 {
 	static char output[IPTOSBUFFERS][3 * 4 + 3 + 1];
 	static short which;
 	u_char* p;
-
 	p = (u_char*)& in;
 	which = (which + 1 == IPTOSBUFFERS ? 0 : which + 1);
 	sprintf(output[which], "%d.%d.%d.%d", p[0], p[1], p[2], p[3]);
@@ -308,23 +310,22 @@ int sendARP(u_char * src_ip, u_char * dst_ip)
 	unsigned char sendbuf[42]; //arp包结构大小，42个字节
 	EthHeader eh;
 	ArpHeader ah;
-	//赋值地址
-	memcpy(eh.DestMAC, dst_mac, 6);   //以太网首部目的MAC地址，全为广播地址
-	memcpy(eh.SourMAC, net_mac_addr, 6);   //以太网首部源MAC地址
+	memcpy(eh.DestMAC, dst_mac, 6);		//以太网首部目的MAC地址，全为广播地址
+	memcpy(eh.SourMAC, net_mac_addr, 6);//以太网首部源MAC地址
 	memcpy(ah.smac, net_mac_addr, 6);   //ARP字段源MAC地址
-	memcpy(ah.dmac, dst_mac, 6);   //ARP字段目的MAC地址
-	memcpy(ah.sip, src_ip, 4);   //ARP字段源IP地址
-	memcpy(ah.dip, dst_ip, 4);
-	eh.EthType = htons(ETH_ARP);   //htons：将主机的无符号短整形数转换成网络字节顺序
+	memcpy(ah.dmac, dst_mac, 6);		//ARP字段目的MAC地址
+	memcpy(ah.sip, src_ip, 4);			//ARP字段源IP地址
+	memcpy(ah.dip, dst_ip, 4);			//ARP字段目的IP地址
+	eh.EthType = htons(ETH_ARP);		//htons：将主机的无符号短整形数转换成网络字节顺序
 	ah.hdType = htons(HARDWARE);
-	ah.proType = htons(ETH_IP);
+	ah.proType = htons(ETH_IP);			//上层协议设置为IP协议
 	ah.hdSize = 6;
 	ah.proSize = 4;
 	ah.op = htons(REQUEST);
 	memset(sendbuf, 0, sizeof(sendbuf));   //ARP清零
 	memcpy(sendbuf, &eh, sizeof(eh));
 	memcpy(sendbuf + sizeof(eh), &ah, sizeof(ah));
-	return pcap_sendpacket(adhandle, sendbuf, 42);
+	return pcap_sendpacket(adhandle, sendbuf, 42);	//发送ARP数据包并返回发送状态
 }
 
 /*捕获ARP数据包*/
@@ -335,10 +336,10 @@ int sendARP(u_char * src_ip, u_char * dst_ip)
 */
 int getMacAddr(int curAdapterNo)
 {
-	u_char src_ip[4] = { 0x12, 0x34, 0x56, 0x78 };
-	u_char dst_ip[4];
-	memcpy(dst_ip, net_ip_addr[curAdapterNo], 4);
-	memcpy(net_mac_addr, random_mac, 6);
+	u_char src_ip[4] = { 0x12, 0x34, 0x56, 0x78 };	//随机一个外部发送方的ip地址
+	u_char dst_ip[4];								
+	memcpy(dst_ip, net_ip_addr[curAdapterNo], 4);	//目的ip地址设置为本机的适配器id
+	memcpy(net_mac_addr, random_mac, 6);			//外部发送方的mac地址设置为随机的mac地址
 	int res = sendARP(src_ip, dst_ip);
 	if (res != 0) {
 		return -1;
@@ -349,7 +350,7 @@ int getMacAddr(int curAdapterNo)
 		}
 		ArpHeader* arph = (ArpHeader*)(pkt_data + 14);
 		if (arph->op != 256) {
-			if (memcmp(arph->dip, src_ip, sizeof(src_ip)) == 0) {
+			if (memcmp(arph->dip, src_ip, sizeof(src_ip)) == 0) {	//收到了伪装ARP请求request对应的reply，解析该reply包获得本机mac地址
 				memcpy(net_mac_addr, arph->smac, 6);
 				break;
 			}
