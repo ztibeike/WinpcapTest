@@ -1,83 +1,83 @@
-ï»¿#include <pcap.h>
+#include <pcap.h>
 #include <winsock.h>
 
-#define ETH_ARP         0x0806  //ä»¥å¤ªç½‘å¸§ç±»å‹è¡¨ç¤ºåé¢æ•°æ®çš„ç±»å‹ï¼Œå¯¹äºARPè¯·æ±‚æˆ–åº”ç­”æ¥è¯´ï¼Œè¯¥å­—æ®µçš„å€¼ä¸ºx0806
-#define HARDWARE    1  //ç¡¬ä»¶ç±»å‹å­—æ®µå€¼ä¸ºè¡¨ç¤ºä»¥å¤ªç½‘åœ°å€
-#define ETH_IP          0x0800  //åè®®ç±»å‹å­—æ®µè¡¨ç¤ºè¦æ˜ å°„çš„åè®®åœ°å€ç±»å‹å€¼ä¸ºx0800è¡¨ç¤ºIPåœ°å€
-#define REQUEST     1   //ARPè¯·æ±‚
-#define RESPONSE       2      //ARPåº”ç­”
+#define ETH_ARP         0x0806  //ÒÔÌ«ÍøÖ¡ÀàĞÍ±íÊ¾ºóÃæÊı¾İµÄÀàĞÍ£¬¶ÔÓÚARPÇëÇó»òÓ¦´ğÀ´Ëµ£¬¸Ã×Ö¶ÎµÄÖµÎªx0806
+#define HARDWARE    1  //Ó²¼şÀàĞÍ×Ö¶ÎÖµÎª±íÊ¾ÒÔÌ«ÍøµØÖ·
+#define ETH_IP          0x0800  //Ğ­ÒéÀàĞÍ×Ö¶Î±íÊ¾ÒªÓ³ÉäµÄĞ­ÒéµØÖ·ÀàĞÍÖµÎªx0800±íÊ¾IPµØÖ·
+#define REQUEST     1   //ARPÇëÇó
+#define RESPONSE       2      //ARPÓ¦´ğ
 #define IPTOSBUFFERS    12
-#define IPADDR	1	//è‡ªå®šä¹‰å¸¸é‡ï¼šIPåœ°å€
-#define MACADDR	2	//è‡ªå®šä¹‰å¸¸é‡ï¼šMACåœ°å€
-#define MAXNUM 10	//è‡ªå®šä¹‰å¸¸é‡ï¼šæœ€å¤§ç½‘ç»œè®¾å¤‡æ•°é‡
+#define IPADDR	1	//×Ô¶¨Òå³£Á¿£ºIPµØÖ·
+#define MACADDR	2	//×Ô¶¨Òå³£Á¿£ºMACµØÖ·
+#define MAXNUM 10	//×Ô¶¨Òå³£Á¿£º×î´óÍøÂçÉè±¸ÊıÁ¿
 #pragma warning( disable : 4996 )
 
 
-//14å­—èŠ‚ä»¥å¤ªç½‘é¦–éƒ¨
+//14×Ö½ÚÒÔÌ«ÍøÊ×²¿
 struct EthHeader
 {
-	u_char DestMAC[6];    //ç›®çš„MACåœ°å€ 6å­—èŠ‚
-	u_char SourMAC[6];   //æºMACåœ°å€ 6å­—èŠ‚
-	u_short EthType;         //ä¸Šä¸€å±‚åè®®ç±»å‹ï¼Œå¦‚0x0800ä»£è¡¨ä¸Šä¸€å±‚æ˜¯IPåè®®ï¼Œ0x0806ä¸ºarp  2å­—èŠ‚
+	u_char DestMAC[6];    //Ä¿µÄMACµØÖ· 6×Ö½Ú
+	u_char SourMAC[6];   //Ô´MACµØÖ· 6×Ö½Ú
+	u_short EthType;         //ÉÏÒ»²ãĞ­ÒéÀàĞÍ£¬Èç0x0800´ú±íÉÏÒ»²ãÊÇIPĞ­Òé£¬0x0806Îªarp  2×Ö½Ú
 };
 
 
-//28å­—èŠ‚ARPå¸§ç»“æ„
+//28×Ö½ÚARPÖ¡½á¹¹
 struct ArpHeader
 {
-	unsigned short hdType;   //ç¡¬ä»¶ç±»å‹
-	unsigned short proType;   //åè®®ç±»å‹
-	unsigned char hdSize;   //ç¡¬ä»¶åœ°å€é•¿åº¦
-	unsigned char proSize;   //åè®®åœ°å€é•¿åº¦
-	unsigned short op;   //æ“ä½œç±»å‹ï¼ŒARPè¯·æ±‚ï¼ˆ1ï¼‰ï¼ŒARPåº”ç­”ï¼ˆ2ï¼‰ï¼ŒRARPè¯·æ±‚ï¼ˆ3ï¼‰ï¼ŒRARPåº”ç­”ï¼ˆ4ï¼‰ã€‚
-	u_char smac[6];   //æºMACåœ°å€
-	u_char sip[4];   //æºIPåœ°å€
-	u_char dmac[6];   //ç›®çš„MACåœ°å€
-	u_char dip[4];   //ç›®çš„IPåœ°å€
+	unsigned short hdType;   //Ó²¼şÀàĞÍ
+	unsigned short proType;   //Ğ­ÒéÀàĞÍ
+	unsigned char hdSize;   //Ó²¼şµØÖ·³¤¶È
+	unsigned char proSize;   //Ğ­ÒéµØÖ·³¤¶È
+	unsigned short op;   //²Ù×÷ÀàĞÍ£¬ARPÇëÇó£¨1£©£¬ARPÓ¦´ğ£¨2£©£¬RARPÇëÇó£¨3£©£¬RARPÓ¦´ğ£¨4£©¡£
+	u_char smac[6];   //Ô´MACµØÖ·
+	u_char sip[4];   //Ô´IPµØÖ·
+	u_char dmac[6];   //Ä¿µÄMACµØÖ·
+	u_char dip[4];   //Ä¿µÄIPµØÖ·
 };
 
-//å®šä¹‰æ•´ä¸ªarpæŠ¥æ–‡åŒ…ï¼Œæ€»é•¿åº¦42å­—èŠ‚
+//¶¨ÒåÕû¸öarp±¨ÎÄ°ü£¬×Ü³¤¶È42×Ö½Ú
 struct ArpPacket {
 	EthHeader ed;
 	ArpHeader ah;
 };
 
 
-pcap_if_t* alldevs;   //æ‰€æœ‰ç½‘ç»œé€‚é…å™¨
-pcap_if_t* d;   //é€‰ä¸­çš„ç½‘ç»œé€‚é…å™¨ 
-int inum;   //é€‰æ‹©ç½‘ç»œé€‚é…å™¨
-int i = 0;   //forå¾ªç¯å˜é‡
-pcap_t* adhandle;   //æ‰“å¼€ç½‘ç»œé€‚é…å™¨ï¼Œæ•æ‰å®ä¾‹,æ˜¯pcap_openè¿”å›çš„å¯¹è±¡
-char errbuf[PCAP_ERRBUF_SIZE];   //é”™è¯¯ç¼“å†²åŒº,å¤§å°ä¸º256
-char filter[] = "ethor proto \\arp"; //ç¬¬ä¸€ä¸ª'\'ä¸ºè½¬ä¹‰,è®¾ç½®arpè¿‡æ»¤è§„åˆ™
+pcap_if_t* alldevs;   //ËùÓĞÍøÂçÊÊÅäÆ÷
+pcap_if_t* d;   //Ñ¡ÖĞµÄÍøÂçÊÊÅäÆ÷ 
+int inum;   //Ñ¡ÔñÍøÂçÊÊÅäÆ÷
+int i = 0;   //forÑ­»·±äÁ¿
+pcap_t* adhandle;   //´ò¿ªÍøÂçÊÊÅäÆ÷£¬²¶×½ÊµÀı,ÊÇpcap_open·µ»ØµÄ¶ÔÏó
+char errbuf[PCAP_ERRBUF_SIZE];   //´íÎó»º³åÇø,´óĞ¡Îª256
+char filter[] = "ethor proto \\arp"; //µÚÒ»¸ö'\'Îª×ªÒå,ÉèÖÃarp¹ıÂË¹æÔò
 bpf_program fcode;
 tm* ltime;
 char timestr[16];
 time_t local_tv_sec;
 pcap_pkthdr* header;
 const u_char* pkt_data;
-FILE* fp = fopen("ARP_log.txt", "w"); //æ—¥å¿—æµ
+FILE* fp = fopen("ARP_log.txt", "w"); //ÈÕÖ¾Á÷
 u_int netmask;
-u_char net_ip_addr[MAXNUM + 1][4];//æ‰€æœ‰ç½‘ç»œè®¾å¤‡çš„ipåœ°å€ï¼Œå‡è®¾ç½‘ç»œè®¾å¤‡æœ€å¤š10ä¸ª
-u_char net_mac_addr[6];//é€‰æ‹©çš„è®¾å¤‡çš„macåœ°å€
-u_char dst_ip[4] = { 0xc0,0xa8,0x00,0x65 }; //é»˜è®¤ç›®çš„ipåœ°å€
-u_char dst_mac[6] = { 0xff,0xff,0xff,0xff,0xff,0xff }; //ç›®çš„MACåœ°å€ï¼Œåˆå€¼ä¸ºff-ff-ff-ff-ff-ffä»£è¡¨å¹¿æ’­
-u_char random_mac[6] = { 0x12, 0x24, 0x56, 0x78, 0x9a, 0xbc };//ä¸ºè·å–æœ¬æœºmacè€Œè®¾ç½®çš„éšæœºmac
+u_char net_ip_addr[MAXNUM + 1][4];//ËùÓĞÍøÂçÉè±¸µÄipµØÖ·£¬¼ÙÉèÍøÂçÉè±¸×î¶à10¸ö
+u_char net_mac_addr[6];//Ñ¡ÔñµÄÉè±¸µÄmacµØÖ·
+u_char dst_ip[4] = { 0xc0,0xa8,0x00,0x65 }; //Ä¬ÈÏÄ¿µÄipµØÖ·
+u_char dst_mac[6] = { 0xff,0xff,0xff,0xff,0xff,0xff }; //Ä¿µÄMACµØÖ·£¬³õÖµÎªff-ff-ff-ff-ff-ff´ú±í¹ã²¥
+u_char random_mac[6] = { 0x12, 0x24, 0x56, 0x78, 0x9a, 0xbc };//Îª»ñÈ¡±¾»úmac¶øÉèÖÃµÄËæ»úmac
 
-/*è·å–é€‚é…å™¨ipåœ°å€*/
+/*»ñÈ¡ÊÊÅäÆ÷ipµØÖ·*/
 char* iptos(u_long in, int num);
-/*å°è£…ARPæ•°æ®åŒ…å¹¶å¹¿æ’­å‘é€*/
+/*·â×°ARPÊı¾İ°ü²¢¹ã²¥·¢ËÍ*/
 int sendARP(u_char* src_ip, u_char* dst_ip);
-/*é€šè¿‡æ„é€ ä¸€ä¸ªå¤–æ¥ARPè¯·æ±‚è·å–å½“å‰ç½‘å¡çš„MACåœ°å€*/
+/*Í¨¹ı¹¹ÔìÒ»¸öÍâÀ´ARPÇëÇó»ñÈ¡µ±Ç°Íø¿¨µÄMACµØÖ·*/
 int getMacAddr(int curAdapterNo);
-/*æ‰“å°ipæˆ–macåœ°å€*/
+/*´òÓ¡ip»òmacµØÖ·*/
 void printMessage(u_char* addr, int type);
 
 
 int main()
 {
 
-	/* è·å–æœ¬æœºè®¾å¤‡åˆ—è¡¨ */
+	/* »ñÈ¡±¾»úÉè±¸ÁĞ±í */
 	if (pcap_findalldevs_ex(PCAP_SRC_IF_STRING, NULL, &alldevs, errbuf) == -1)
 	{
 		fprintf(stderr, "Error in pcap_findalldevs: %s\n", errbuf);
@@ -85,7 +85,7 @@ int main()
 		exit(1);
 	}
 
-	/* æ‰“å°åˆ—è¡¨ */
+	/* ´òÓ¡ÁĞ±í */
 	for (d = alldevs; d; d = d->next)
 	{
 		printf("%d. %s", i, d->name);
@@ -98,7 +98,7 @@ int main()
 			printf(" (No description available)\n");
 			fprintf(fp, " (No description available)\n");
 		}
-		//æŸ¥è¯¢å¹¶ä¿å­˜ç½‘ç»œè®¾å¤‡çš„ipåœ°å€
+		//²éÑ¯²¢±£´æÍøÂçÉè±¸µÄipµØÖ·
 		char* str = "0.0.0.0";
 		for (pcap_addr_t* a = d->addresses; a; a = a->next) {
 			if (a->addr->sa_family == AF_INET) {
@@ -127,33 +127,33 @@ int main()
 	{
 		printf("\nInterface number out of range.\n");
 		fprintf(fp, "\nInterface number out of range.\n");
-		/* é‡Šæ”¾è®¾å¤‡åˆ—è¡¨ */
+		/* ÊÍ·ÅÉè±¸ÁĞ±í */
 		pcap_freealldevs(alldevs);
 		return -1;
 	}
 
-	/* è·³è½¬åˆ°é€‰ä¸­çš„é€‚é…å™¨ */
+	/* Ìø×ªµ½Ñ¡ÖĞµÄÊÊÅäÆ÷ */
 	for (d = alldevs, i = 0; i < inum - 1; d = d->next, i++);
 
-	/* æ‰“å¼€è®¾å¤‡ */
-	if ((adhandle = pcap_open(d->name,          // è®¾å¤‡å
-		65536,            // 65535ä¿è¯èƒ½æ•è·åˆ°ä¸åŒæ•°æ®é“¾è·¯å±‚ä¸Šçš„æ¯ä¸ªæ•°æ®åŒ…çš„å…¨éƒ¨å†…å®¹
-		PCAP_OPENFLAG_PROMISCUOUS,    // æ··æ‚æ¨¡å¼
-		1000,             // è¯»å–è¶…æ—¶æ—¶é—´
-		NULL,             // è¿œç¨‹æœºå™¨éªŒè¯
-		errbuf            // é”™è¯¯ç¼“å†²æ± 
+	/* ´ò¿ªÉè±¸ */
+	if ((adhandle = pcap_open(d->name,          // Éè±¸Ãû
+		65536,            // 65535±£Ö¤ÄÜ²¶»ñµ½²»Í¬Êı¾İÁ´Â·²ãÉÏµÄÃ¿¸öÊı¾İ°üµÄÈ«²¿ÄÚÈİ
+		PCAP_OPENFLAG_PROMISCUOUS,    // »ìÔÓÄ£Ê½
+		1000,             // ¶ÁÈ¡³¬Ê±Ê±¼ä
+		NULL,             // Ô¶³Ì»úÆ÷ÑéÖ¤
+		errbuf            // ´íÎó»º³å³Ø
 	)) == NULL)
 	{
 		fprintf(stderr, "\nUnable to open the adapter. %s is not supported by WinPcap\n", d->name);
 		fprintf(fp, "\nUnable to open the adapter. %s is not supported by WinPcap\n", d->name);
-		/* é‡Šæ”¾è®¾å¤‡åˆ—è¡¨ */
+		/* ÊÍ·ÅÉè±¸ÁĞ±í */
 		pcap_freealldevs(alldevs);
 		return -1;
 	}
 
 
 	int res = getMacAddr(inum);
-	//æœªèƒ½è‡ªåŠ¨è·å–åˆ°æœ¬æœºmacåœ°å€ï¼Œéœ€è¦æ‰‹åŠ¨è¾“å…¥
+	//Î´ÄÜ×Ô¶¯»ñÈ¡µ½±¾»úmacµØÖ·£¬ĞèÒªÊÖ¶¯ÊäÈë
 	if (res != 0) {
 		printf("Cannot get MAC address automatically, please input MAC address: ");
 		fprintf(fp, "Cannot get MAC address automatically, please input MAC address: ");
@@ -166,7 +166,7 @@ int main()
 		fprintf(fp, "\n");
 	}
 
-	//è®¾ç½®ç›®çš„ipåœ°å€ï¼Œé»˜è®¤æˆ–è€…è‡ªå®šä¹‰
+	//ÉèÖÃÄ¿µÄipµØÖ·£¬Ä¬ÈÏ»òÕß×Ô¶¨Òå
 	char option;
 	printf("\nUse default destination IP(192.168.0.101)? Y(y)/N(n): ");
 	fprintf(fp, "\nUse default destination IP(192.168.0.101)? Y(y)/N(n): ");
@@ -206,10 +206,10 @@ int main()
 	}
 
 	netmask = ((sockaddr_in*)((d->addresses)->netmask))->sin_addr.S_un.S_addr;
-	pcap_compile(adhandle, &fcode, filter, 1, netmask);	//ç¼–è¯‘è¿‡æ»¤å™¨
-	pcap_setfilter(adhandle, &fcode);	//è®¾ç½®è¿‡æ»¤å™¨
+	pcap_compile(adhandle, &fcode, filter, 1, netmask);	//±àÒë¹ıÂËÆ÷
+	pcap_setfilter(adhandle, &fcode);	//ÉèÖÃ¹ıÂËÆ÷
 
-	/* é‡Šæ”¾è®¾å¤‡åˆ—è¡¨ */
+	/* ÊÍ·ÅÉè±¸ÁĞ±í */
 	pcap_freealldevs(alldevs);
 	i = 0;
 
@@ -217,14 +217,14 @@ int main()
 	fprintf(fp, "Catching packets...\n\n");
 
 	int begin = -1;
-	//è·å–æ•°æ®åŒ…å¹¶è§£æ
+	//»ñÈ¡Êı¾İ°ü²¢½âÎö
 	while (res = pcap_next_ex(adhandle, &header, &pkt_data) >= 0) {
-		//è¶…æ—¶
+		//³¬Ê±
 		if (res == 0) {
 			continue;
 		}
 
-		//è§£æARPåŒ…ï¼ŒARPåŒ…å°è£…åœ¨MACå¸§ï¼ŒMACå¸§é¦–éƒ¨å 14å­—èŠ‚
+		//½âÎöARP°ü£¬ARP°ü·â×°ÔÚMACÖ¡£¬MACÖ¡Ê×²¿Õ¼14×Ö½Ú
 		ArpHeader* arpheader = (ArpHeader*)(pkt_data + 14);
 		if (begin != 0) {
 			begin = memcmp(net_ip_addr[inum], arpheader->sip, sizeof(arpheader->sip));
@@ -234,7 +234,7 @@ int main()
 		}
 		printf("message %d:\n", ++i);
 		fprintf(fp, "message %d:\n", i);
-		//è®¾ç½®æ ‡å¿—ï¼Œå½“æ”¶åˆ°ä¹‹å‰å‘é€çš„requestçš„replyæ—¶ç»“æŸæ•è·
+		//ÉèÖÃ±êÖ¾£¬µ±ÊÕµ½Ö®Ç°·¢ËÍµÄrequestµÄreplyÊ±½áÊø²¶»ñ
 		bool ok = false;
 		if (arpheader->op == 256) {
 			printf("request message.\n");
@@ -243,34 +243,34 @@ int main()
 		else {
 			printf("reply message.\n");
 			fprintf(fp, "reply message.\n");
-			//å¦‚æœå½“å‰æŠ¥æ–‡æ—¶replyæŠ¥æ–‡ï¼Œåˆ™é€šè¿‡æ¯”è¾ƒipæ¥åˆ¤æ–­æ˜¯å¦æ—¶ä¹‹å‰å‘é€çš„requestå¯¹åº”çš„reply
+			//Èç¹ûµ±Ç°±¨ÎÄÊ±reply±¨ÎÄ£¬ÔòÍ¨¹ı±È½ÏipÀ´ÅĞ¶ÏÊÇ·ñÊ±Ö®Ç°·¢ËÍµÄrequest¶ÔÓ¦µÄreply
 			if (memcmp(arpheader->dip, net_ip_addr[inum], sizeof(arpheader->dip)) == 0) {
 				memcpy(dst_mac, arpheader->smac, 6);
 				ok = true;
 			}
 		}
-		//è·å–ä»¥å¤ªç½‘å¸§é•¿åº¦
+		//»ñÈ¡ÒÔÌ«ÍøÖ¡³¤¶È
 		printf("ARP packet length: %d\n", header->len);
 		fprintf(fp, "ARP packet length: %d\n", header->len);
-		//è·å–æ—¶é—´æˆ³
+		//»ñÈ¡Ê±¼ä´Á
 		local_tv_sec = header->ts.tv_sec;
 		ltime = localtime(&local_tv_sec);
 		strftime(timestr, sizeof(timestr), "%H:%M:%S", ltime);
 		printf("current time: %s\n", timestr);
 		fprintf(fp, "current time: %s\n", timestr);
-		//æ‰“å°æºip
+		//´òÓ¡Ô´ip
 		printf("source ip: ");
 		fprintf(fp, "source ip: ");
 		printMessage(arpheader->sip, IPADDR);
-		//æ‰“å°ç›®çš„ip
+		//´òÓ¡Ä¿µÄip
 		printf("destination ip: ");
 		fprintf(fp, "destination ip: ");
 		printMessage(arpheader->dip, IPADDR);
-		//æ‰“å°æºmac
+		//´òÓ¡Ô´mac
 		printf("source mac: ");
 		fprintf(fp, "source mac: ");
 		printMessage(arpheader->smac, MACADDR);
-		//æ‰“å°ç›®çš„mac
+		//´òÓ¡Ä¿µÄmac
 		printf("destination mac: ");
 		fprintf(fp, "destination mac: ");
 		printMessage(arpheader->dmac, MACADDR);
@@ -290,7 +290,7 @@ int main()
 }
 
 
-/*è·å–é€‚é…å™¨ipåœ°å€, ä»£ç æ¥æºäºå®˜æ–¹æ–‡æ¡£*/
+/*»ñÈ¡ÊÊÅäÆ÷ipµØÖ·, ´úÂëÀ´Ô´ÓÚ¹Ù·½ÎÄµµ*/
 char* iptos(u_long in, int num)
 {
 	static char output[IPTOSBUFFERS][3 * 4 + 3 + 1];
@@ -304,42 +304,42 @@ char* iptos(u_long in, int num)
 }
 
 
-/*å°è£…ARPæ•°æ®åŒ…å¹¶å¹¿æ’­å‘é€*/
+/*·â×°ARPÊı¾İ°ü²¢¹ã²¥·¢ËÍ*/
 int sendARP(u_char * src_ip, u_char * dst_ip)
 {
-	unsigned char sendbuf[42]; //arpåŒ…ç»“æ„å¤§å°ï¼Œ42ä¸ªå­—èŠ‚
+	unsigned char sendbuf[42]; //arp°ü½á¹¹´óĞ¡£¬42¸ö×Ö½Ú
 	EthHeader eh;
 	ArpHeader ah;
-	memcpy(eh.DestMAC, dst_mac, 6);		//ä»¥å¤ªç½‘é¦–éƒ¨ç›®çš„MACåœ°å€ï¼Œå…¨ä¸ºå¹¿æ’­åœ°å€
-	memcpy(eh.SourMAC, net_mac_addr, 6);//ä»¥å¤ªç½‘é¦–éƒ¨æºMACåœ°å€
-	memcpy(ah.smac, net_mac_addr, 6);   //ARPå­—æ®µæºMACåœ°å€
-	memcpy(ah.dmac, dst_mac, 6);		//ARPå­—æ®µç›®çš„MACåœ°å€
-	memcpy(ah.sip, src_ip, 4);			//ARPå­—æ®µæºIPåœ°å€
-	memcpy(ah.dip, dst_ip, 4);			//ARPå­—æ®µç›®çš„IPåœ°å€
-	eh.EthType = htons(ETH_ARP);		//htonsï¼šå°†ä¸»æœºçš„æ— ç¬¦å·çŸ­æ•´å½¢æ•°è½¬æ¢æˆç½‘ç»œå­—èŠ‚é¡ºåº
+	memcpy(eh.DestMAC, dst_mac, 6);		//ÒÔÌ«ÍøÊ×²¿Ä¿µÄMACµØÖ·£¬È«Îª¹ã²¥µØÖ·
+	memcpy(eh.SourMAC, net_mac_addr, 6);//ÒÔÌ«ÍøÊ×²¿Ô´MACµØÖ·
+	memcpy(ah.smac, net_mac_addr, 6);   //ARP×Ö¶ÎÔ´MACµØÖ·
+	memcpy(ah.dmac, dst_mac, 6);		//ARP×Ö¶ÎÄ¿µÄMACµØÖ·
+	memcpy(ah.sip, src_ip, 4);			//ARP×Ö¶ÎÔ´IPµØÖ·
+	memcpy(ah.dip, dst_ip, 4);			//ARP×Ö¶ÎÄ¿µÄIPµØÖ·
+	eh.EthType = htons(ETH_ARP);		//htons£º½«Ö÷»úµÄÎŞ·ûºÅ¶ÌÕûĞÎÊı×ª»»³ÉÍøÂç×Ö½ÚË³Ğò
 	ah.hdType = htons(HARDWARE);
-	ah.proType = htons(ETH_IP);			//ä¸Šå±‚åè®®è®¾ç½®ä¸ºIPåè®®
+	ah.proType = htons(ETH_IP);			//ÉÏ²ãĞ­ÒéÉèÖÃÎªIPĞ­Òé
 	ah.hdSize = 6;
 	ah.proSize = 4;
 	ah.op = htons(REQUEST);
-	memset(sendbuf, 0, sizeof(sendbuf));   //ARPæ¸…é›¶
+	memset(sendbuf, 0, sizeof(sendbuf));   //ARPÇåÁã
 	memcpy(sendbuf, &eh, sizeof(eh));
 	memcpy(sendbuf + sizeof(eh), &ah, sizeof(ah));
-	return pcap_sendpacket(adhandle, sendbuf, 42);	// å‘é€ARPæ•°æ®åŒ…å¹¶è¿”å›å‘é€çŠ¶æ€
+	return pcap_sendpacket(adhandle, sendbuf, 42);	// ·¢ËÍARPÊı¾İ°ü²¢·µ»Ø·¢ËÍ×´Ì¬
 }
 
-/*æ•è·ARPæ•°æ®åŒ…*/
+/*²¶»ñARPÊı¾İ°ü*/
 
 
 /**
-	é€šè¿‡æ„é€ ä¸€ä¸ªå¤–æ¥ARPè¯·æ±‚è·å–å½“å‰ç½‘å¡çš„MACåœ°å€
+	Í¨¹ı¹¹ÔìÒ»¸öÍâÀ´ARPÇëÇó»ñÈ¡µ±Ç°Íø¿¨µÄMACµØÖ·
 */
 int getMacAddr(int curAdapterNo)
 {
-	u_char src_ip[4] = { 0x12, 0x34, 0x56, 0x78 };	//éšæœºä¸€ä¸ªå¤–éƒ¨å‘é€æ–¹çš„ipåœ°å€
+	u_char src_ip[4] = { 0x12, 0x34, 0x56, 0x78 };	//Ëæ»úÒ»¸öÍâ²¿·¢ËÍ·½µÄipµØÖ·
 	u_char dst_ip[4];								
-	memcpy(dst_ip, net_ip_addr[curAdapterNo], 4);	//ç›®çš„ipåœ°å€è®¾ç½®ä¸ºæœ¬æœºçš„é€‚é…å™¨id
-	memcpy(net_mac_addr, random_mac, 6);			//å¤–éƒ¨å‘é€æ–¹çš„macåœ°å€è®¾ç½®ä¸ºéšæœºçš„macåœ°å€
+	memcpy(dst_ip, net_ip_addr[curAdapterNo], 4);	//Ä¿µÄipµØÖ·ÉèÖÃÎª±¾»úµÄÊÊÅäÆ÷id
+	memcpy(net_mac_addr, random_mac, 6);			//Íâ²¿·¢ËÍ·½µÄmacµØÖ·ÉèÖÃÎªËæ»úµÄmacµØÖ·
 	int res = sendARP(src_ip, dst_ip);
 	if (res != 0) {
 		return -1;
@@ -350,7 +350,7 @@ int getMacAddr(int curAdapterNo)
 		}
 		ArpHeader* arph = (ArpHeader*)(pkt_data + 14);
 		if (arph->op != 256) {
-			if (memcmp(arph->dip, src_ip, sizeof(src_ip)) == 0) {	//æ”¶åˆ°äº†ä¼ªè£…ARPè¯·æ±‚requestå¯¹åº”çš„replyï¼Œè§£æè¯¥replyåŒ…è·å¾—æœ¬æœºmacåœ°å€
+			if (memcmp(arph->dip, src_ip, sizeof(src_ip)) == 0) {	//ÊÕµ½ÁËÎ±×°ARPÇëÇórequest¶ÔÓ¦µÄreply£¬½âÎö¸Ãreply°ü»ñµÃ±¾»úmacµØÖ·
 				memcpy(net_mac_addr, arph->smac, 6);
 				break;
 			}
@@ -359,7 +359,7 @@ int getMacAddr(int curAdapterNo)
 	return 0;
 }
 
-/*æ‰“å°ipåœ°å€æˆ–macåœ°å€*/
+/*´òÓ¡ipµØÖ·»òmacµØÖ·*/
 void printMessage(u_char * addr, int type)
 {
 	int size = type == IPADDR ? 4 : 6;
