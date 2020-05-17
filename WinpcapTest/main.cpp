@@ -71,7 +71,7 @@ int sendARP(u_char* src_ip, u_char* dst_ip);
 /*通过构造一个外来ARP请求获取当前网卡的MAC地址*/
 int getMacAddr(int curAdapterNo);
 /*打印ip或mac地址*/
-void printMessage(u_char* addr, int type);
+void printAddr(u_char* addr, int type);
 
 
 int main()
@@ -88,8 +88,8 @@ int main()
 	/* 打印列表 */
 	for (d = alldevs; d; d = d->next)
 	{
-		printf("%d. %s", i, d->name);
-		fprintf(fp, "%d. %s", ++i, d->name);
+		printf("%d. %s", ++i, d->name);
+		fprintf(fp, "%d. %s", i, d->name);
 		if (d->description) {
 			printf(" (%s)\n", d->description);
 			fprintf(fp, " (%s)\n", d->description);
@@ -172,7 +172,7 @@ int main()
 	fprintf(fp, "\nUse default destination IP(192.168.0.101)? Y(y)/N(n): ");
 	getchar();
 	scanf_s("%c", &option, 1);
-	fprintf(fp, "%c", option);
+	fprintf(fp, "%c\n", option);
 	if (option == 'N' || option == 'n') {
 		printf("Input the IP Address of destination: ");
 		fprintf(fp, "Input the IP Address of destination: ");
@@ -186,13 +186,13 @@ int main()
 	}
 	printf("\nThe MAC Address of Adapter %d: ", inum);
 	fprintf(fp, "\nThe MAC Address of Adapter %d: ", inum);
-	printMessage(net_mac_addr, MACADDR);
+	printAddr(net_mac_addr, MACADDR);
 	printf("The IP Address of Adapter %d: ", inum);
 	fprintf(fp, "The IP Address of Adapter %d: ", inum);
-	printMessage(net_ip_addr[inum], IPADDR);
+	printAddr(net_ip_addr[inum], IPADDR);
 	printf("The IP Address of destination: ");
 	fprintf(fp, "The IP Address of destination: ");
-	printMessage(dst_ip, IPADDR);
+	printAddr(dst_ip, IPADDR);
 
 	res = sendARP(net_ip_addr[inum], dst_ip);
 
@@ -261,25 +261,25 @@ int main()
 		//打印源ip
 		printf("source ip: ");
 		fprintf(fp, "source ip: ");
-		printMessage(arpheader->sip, IPADDR);
+		printAddr(arpheader->sip, IPADDR);
 		//打印目的ip
 		printf("destination ip: ");
 		fprintf(fp, "destination ip: ");
-		printMessage(arpheader->dip, IPADDR);
+		printAddr(arpheader->dip, IPADDR);
 		//打印源mac
 		printf("source mac: ");
 		fprintf(fp, "source mac: ");
-		printMessage(arpheader->smac, MACADDR);
+		printAddr(arpheader->smac, MACADDR);
 		//打印目的mac
 		printf("destination mac: ");
 		fprintf(fp, "destination mac: ");
-		printMessage(arpheader->dmac, MACADDR);
+		printAddr(arpheader->dmac, MACADDR);
 		printf("\n\n");
 		fprintf(fp, "\n\n");
 		if (ok) {
 			printf("Get the MAC address of destination: ");
 			fprintf(fp, "Get the MAC address of destination: ");
-			printMessage(dst_mac, MACADDR);
+			printAddr(dst_mac, MACADDR);
 			printf("\nEnd of catching...\n\n");
 			fprintf(fp, "\nEnd of catching...\n\n");
 			break;
@@ -360,7 +360,7 @@ int getMacAddr(int curAdapterNo)
 }
 
 /*打印ip地址或mac地址*/
-void printMessage(u_char * addr, int type)
+void printAddr(u_char * addr, int type)
 {
 	int size = type == IPADDR ? 4 : 6;
 	const char* format = type == IPADDR ? "%d." : "%02x-";
